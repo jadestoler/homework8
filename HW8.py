@@ -1,7 +1,7 @@
-# Your name: 
-# Your student id:
-# Your email:
-# List who you have worked with on this homework:
+# Your name: Jade Stoler
+# Your student id: 0172 8980
+# Your email: jkstoler@umich.edu
+# List who you have worked with on this homework: Dylan Zgodny and Lily Wachtel
 
 import matplotlib.pyplot as plt
 import os
