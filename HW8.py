@@ -1,8 +1,7 @@
 # Your name: Jade Stoler
-# Your student id: 0172 8980
-# Your email: jkstoler@umich.edu
-# List who you have worked with on this homework: Dylan Zgodny and Lily Wachtel
-
+# Your student id:
+# Your email:
+# List who you have worked with on this homework: 
 import matplotlib.pyplot as plt
 import os
 import sqlite3
@@ -15,19 +14,25 @@ def load_rest_data(db):
     and each inner key is a dictionary, where the key:value pairs should be the category, 
     building, and rating for the restaurant.
     """
-    path = os.path.dirname(os.path.abspath(__file__))
-    conn = sqlite3.connect(path+'/'+db)
-    cur = conn.cursor()
-    cur.execute("SELECT r.name,c.category,b.building,r.rating FROM restaurants AS r JOIN categories AS c ON r.category_id = c.id JOIN buildings AS b on r.category_id = b.id")
-    r_information = cur.fetchall()
-    r_dict = {}
-    for tup in r_information:
-        inner_dict = {}
-        inner_dict['category'] = tup[1]
-        inner_dict['building'] = tup[2]
-        inner_dict['rating'] = tup[3]
-        r_dict[tup[0]] = inner_dict
-    return r_dict
+    
+    conn = sqlite3.connect(db)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT r.name, c.category, b.building, r.rating FROM restaurants r
+        JOIN categories c ON r.category_id = c.id 
+        JOIN buildings b ON r.building_id = b.id
+    """)
+    results = cursor.fetchall()
+    data = {}
+    for each in results:
+        name = each[0]
+        category = each[1]
+        building = each[2]
+        rating = each[3]
+        data[name] = {'category': category, 'building': building, 'rating': rating}
+    conn.close()
+    return data
 
 def plot_rest_categories(db):
     """
@@ -35,26 +40,28 @@ def plot_rest_categories(db):
     restaurant categories and the values should be the number of restaurants in each category. The function should
     also create a bar chart with restaurant categories and the count of number of restaurants in each category.
     """
-    path = os.path.dirname(os.path.abspath(__file__))
-    conn = sqlite3.connect(path+'/'+db)
-    cur = conn.cursor()
-    cur.execute("SELECT categories.category, COUNT(restaurants.name) AS c from categories JOIN restaurants ON restauraunts.category_id = categories.id GROUP BY restauraunts.category_id ORDER BY c DESC")
-    c_info = cur.fetchall()
-    c = {}
-    x = []
-    y = []
-    for tup in c_info:
-        c[tup[0]] = tup[1]
-        x.append(tup[0])
-        y.append(tup[1])
-    print(x)
-    print(y)
-    fig, ax = plt.subplots(figsize = (15,5))
-    ax.barh(x,y)
-    ax.invert_yaxis()
-    ax.set(ylabel = 'Restauraunt Categories', xlabel = 'Number of Restauraunts', title = 'Types of Restauraunts on South U Ave')
+    conn = sqlite3.connect(db)
+    cursor = conn.cursor()
+    cursor.execute("""
+    SELET c.category, COUNT(r.name)
+        FROM restaurants r
+        JOIN categories c ON r.category_id = c.id
+        GROUP BY c.category
+    """)
+    results = cursor.fetchall()
+    data = {}
+    for row in results:
+        category = row[0]
+        num = row[1]
+        data[category] = num
+    conn.close()
+    plt.bar(data.keys(), data.values())
+    plt.title('Number of Restaurants by Category')
+    plt.xlabel('Category')
+    plt.ylabel('Count')
     plt.show()
-    return c
+    return data
+
 
 def find_rest_in_building(building_num, db):
     '''
@@ -63,15 +70,19 @@ def find_rest_in_building(building_num, db):
     should be sorted by their rating from highest to lowest.
     '''
     conn = sqlite3.connect(db)
-    cur = conn.cursor()
-    cur.execute("SELECT restauraunts.name FROM restauraunts JOIN buildings ON restauraunts.building_id = buildings.id WHERE buildings.building = ? ORDER BY restauraunts.rating DESC", (building_num,))
-    r_info = cur.fetchall()
-    r_names = []
-    for tup in r_info:
-        r_names.append(tup[0])
-    return r_names
-
-
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT r.name
+        FROM restaurants r
+        JOIN buildings b ON r.building_id = b.id
+        WHERE b.building = ?
+        ORDER BY r.rating DESC
+    """, (building_num,))
+    results = cursor.fetchall()
+    restaurant = [row[0] for row in results]
+    conn.close()
+    return restaurant
+    
 #EXTRA CREDIT
 def get_highest_rating(db): #Do this through DB as well
     """
@@ -88,7 +99,7 @@ def get_highest_rating(db): #Do this through DB as well
 
 #Try calling your functions here
 def main():
-    pass
+    get_highest_rating("South_U_Restaurants.db")
 
 class TestHW8(unittest.TestCase):
     def setUp(self):
